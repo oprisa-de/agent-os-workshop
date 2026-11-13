@@ -1,6 +1,7 @@
 from agents.state import AgentState
 from agents.orchestrator import WizardOrchestrator
 from agents.analyst import WizardAnalyst
+from agents.llm_advisor import WizardLLMAdvisor
 from agents.synthesizer import WizardSynthesizer
 from database.db import init_db, save_task_run
 from interfaces.cli_interface import WizardCLI
@@ -28,13 +29,17 @@ def run_agent_workflow(user_task: str) -> None:
     else:
         logger.info("[Workflow] Skipping Analyst node per QUICK_SUMMARY_PIPELINE route.")
 
-    # 3. Synthesizer compiles the final report from AgentState
+    # 3. LLM Advisor generates strategic recommendations
+    advisor = WizardLLMAdvisor(name="Wizard-OS-LLM-Advisor")
+    state = advisor.generate_recommendations(state)
+
+    # 4. Synthesizer compiles the final report from AgentState
     synthesizer = WizardSynthesizer(name="Wizard-OS-Synthesizer")
     state = synthesizer.generate_executive_report(state)
 
     print("\n" + state.final_report + "\n")
 
-    # 4. Persist execution state to SQLite
+    # 5. Persist execution state to SQLite
     save_task_run(
         task_description=state.task_description,
         status=state.status,
@@ -43,7 +48,7 @@ def run_agent_workflow(user_task: str) -> None:
         top_agent=state.metrics.get("top_performing_agent", "N/A")
     )
 
-    # 5. Export structured reports to Markdown and JSON
+    # 6. Export structured reports to Markdown and JSON
     exported_files = export_report(state)
     print(f"[Export] Markdown report saved to: {exported_files['markdown_path']}")
     print(f"[Export] JSON report saved to    : {exported_files['json_path']}")

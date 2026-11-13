@@ -31,6 +31,9 @@ def export_report(state: AgentState, output_dir: str = "exports") -> Dict[str, s
 - **Average Success Rate:** {state.metrics.get('average_success_rate', 0)}%
 - **Top Performing Agent:** {state.metrics.get('top_performing_agent', 'N/A')}
 
+## AI Strategic Recommendation
+{state.ai_insights or "N/A"}
+
 ## Execution Trace
 {trace_md}
 """

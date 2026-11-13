@@ -11,10 +11,9 @@ class WizardSynthesizer:
         self.name = name
 
     def generate_executive_report(self, state: AgentState) -> AgentState:
-        """Synthesizes workflow state and metrics into a formatted executive report."""
+        """Synthesizes workflow state, metrics, and AI insights into a formatted report."""
         logger.info(f"[{self.name}] Synthesizing executive report for route: {state.route}")
 
-        # Provide lightweight fallback metrics if Analyst was bypassed
         if not state.metrics:
             state.metrics = {
                 "total_tasks_completed": 0,
@@ -22,6 +21,7 @@ class WizardSynthesizer:
                 "top_performing_agent": "Core-System (Direct Check)"
             }
 
+        recommendation = state.ai_insights or "No AI recommendations generated."
         trace_lines = "\n".join([f"          * {step}" for step in state.execution_history])
 
         report = f"""
@@ -35,6 +35,9 @@ class WizardSynthesizer:
         - Total Tasks Processed : {state.metrics.get('total_tasks_completed', 0)}
         - Average Success Rate  : {state.metrics.get('average_success_rate', 0)}%
         - Top Performing Agent  : {state.metrics.get('top_performing_agent', 'N/A')}
+
+        [AI Strategic Recommendation]:
+        {recommendation}
 
         [Execution Trace]:
 {trace_lines}

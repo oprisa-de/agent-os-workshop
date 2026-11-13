@@ -8,6 +8,7 @@ from agents.orchestrator import WizardOrchestrator
 from agents.state import AgentState
 from agents.synthesizer import WizardSynthesizer
 from utils.exporter import export_report
+from agents.llm_advisor import WizardLLMAdvisor
 
 
 class TestWizardOSWorkflow(unittest.TestCase):
@@ -51,6 +52,18 @@ class TestWizardOSWorkflow(unittest.TestCase):
 
         self.assertEqual(state.status, "COMPLETED")
         self.assertIn("WIZARD OS - EXECUTIVE EXECUTION REPORT", state.final_report)
+
+    def test_llm_advisor_fallback_recommendations(self) -> None:
+        analyst = WizardAnalyst()
+        advisor = WizardLLMAdvisor()
+        advisor.api_key = ""  # Force offline fallback mode for deterministic testing
+
+        state = AgentState(task_description="Evaluate agent efficiency")
+        state = analyst.process_and_analyze(state)
+        state = advisor.generate_recommendations(state)
+
+        self.assertIn("Agent_4", state.ai_insights)
+        self.assertTrue(len(state.ai_insights) > 20)
 
         # Verify Markdown and JSON exports using an isolated temporary directory
         with tempfile.TemporaryDirectory() as tmp_dir:

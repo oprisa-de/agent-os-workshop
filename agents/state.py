@@ -9,6 +9,7 @@ class AgentState:
     route: str = "UNASSIGNED"
     status: str = "INITIALIZED"
     metrics: Dict[str, Any] = field(default_factory=dict)
+    ai_insights: str = ""
     final_report: str = ""
     execution_history: List[str] = field(default_factory=list)
 
