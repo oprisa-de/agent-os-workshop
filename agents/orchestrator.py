@@ -1,46 +1,34 @@
-import os
-from typing import TypedDict, List
-from dotenv import load_dotenv
+from agents.state import AgentState
+from utils.logger import get_logger
 
-load_dotenv()
-
-
-# Define the state tracked by the agent (State management using LangGraph / Core System)
-class AgentState(TypedDict):
-    task_description: str
-    decisions_needed: List[str]
-    status: str
-    output_report: str
+logger = get_logger("WizardOrchestrator")
 
 
 class WizardOrchestrator:
-    def __init__(self, name: str):
+    """Core routing agent that classifies tasks and directs workflow execution."""
+
+    def __init__(self, name: str = "Wizard-OS-Core"):
         self.name = name
 
-    def analyze_task(self, task: str) -> AgentState:
-        print(f"[{self.name}] Analyzing incoming task: '{task}'...")
+    def route_task(self, state: AgentState) -> AgentState:
+        """Analyzes the task description and selects the optimal execution pipeline."""
+        logger.info(f"[{self.name}] Evaluating task: '{state.task_description}'")
+        task_lower = state.task_description.lower()
 
-        # Simulating the logic where the agent identifies missing decisions or parameters
-        state = AgentState(
-            task_description=task,
-            decisions_needed=[
-                "At what time should the report be sent and in which timezone?",
-                "Which KPIs or data columns should be tracked automatically?",
-                "Confirmation of permissions for databases or external files."
-            ],
-            status="WAITING_FOR_USER_INPUT",
-            output_report=""
-        )
+        quick_keywords = ("status", "ping", "quick", "health")
+        analytics_keywords = ("analytics", "performance", "report", "metrics", "data")
+
+        if any(word in task_lower for word in quick_keywords) and not any(
+            word in task_lower for word in analytics_keywords
+        ):
+            state.route = "QUICK_SUMMARY_PIPELINE"
+            state.status = "ROUTED_TO_SYNTHESIZER"
+            state.log_step("Orchestrator selected QUICK_SUMMARY_PIPELINE (bypassed heavy analytics).")
+            logger.info(f"[{self.name}] Dynamic Route Selected -> {state.route}")
+        else:
+            state.route = "FULL_ANALYTICS_PIPELINE"
+            state.status = "ROUTED_TO_ANALYST"
+            state.log_step("Orchestrator selected FULL_ANALYTICS_PIPELINE (full data processing).")
+            logger.info(f"[{self.name}] Dynamic Route Selected -> {state.route}")
+
         return state
-
-
-if __name__ == "__main__":
-    # Quick test of the orchestrator directly inside PyCharm
-    bot = WizardOrchestrator(name="Wizard-OS-Core")
-    current_state = bot.analyze_task("Generate the daily performance report for active agents.")
-
-    print("\n--- CURRENT AGENT STATE ---")
-    print(f"Status: {current_state['status']}")
-    print("Decisions required from user:")
-    for i, decision in enumerate(current_state['decisions_needed'], 1):
-        print(f"  {i}. {decision}")

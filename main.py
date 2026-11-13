@@ -1,46 +1,47 @@
+from agents.state import AgentState
 from agents.orchestrator import WizardOrchestrator
 from agents.analyst import WizardAnalyst
 from agents.synthesizer import WizardSynthesizer
 from database.db import init_db, save_task_run
 from interfaces.cli_interface import WizardCLI
+from utils.logger import get_logger
+
+logger = get_logger("WizardMain")
 
 
 def run_agent_workflow(user_task: str) -> None:
-    print("=== STARTING WIZARD OS MULTI-AGENT WORKFLOW ===\n")
+    logger.info("=== STARTING WIZARD OS MULTI-AGENT WORKFLOW ===")
 
-    # 0. Ensure the database is initialized
+    # 0. Initialize persistence layer and shared AgentState
     init_db()
+    state = AgentState(task_description=user_task)
 
-    # 1. Initialize the Orchestrator Agent
+    # 1. Orchestrator classifies and routes the state
     orchestrator = WizardOrchestrator(name="Wizard-OS-Core")
-    initial_state = orchestrator.analyze_task(user_task)
+    state = orchestrator.route_task(state)
 
-    print(f"\n[Status]: {initial_state['status']}")
-    print("[Orchestrator Action]: Requirements validated. Handing over to Analyst Agent...\n")
-
-    # 2. Initialize the Analyst Agent and execute data processing
-    analyst = WizardAnalyst(name="Wizard-OS-Analyst")
-    analysis_results = analyst.process_and_analyze(data_source="agent_performance_logs")
-
-    # 3. Initialize the Synthesizer Agent to format the final executive report
+    # 2. Conditional execution based on dynamic routing
+    if state.route == "FULL_ANALYTICS_PIPELINE":
+        analyst = WizardAnalyst(name="Wizard-OS-Analyst")
+        state = analyst.process_and_analyze(state, data_source="agent_performance_logs")
+    else:
+        logger.info("[Workflow] Skipping Analyst node per QUICK_SUMMARY_PIPELINE route.")
+    # 3. Synthesizer compiles the final report from AgentState
     synthesizer = WizardSynthesizer(name="Wizard-OS-Synthesizer")
-    executive_report = synthesizer.generate_executive_report(
-        task_description=initial_state["task_description"],
-        metrics=analysis_results
-    )
+    state = synthesizer.generate_executive_report(state)
 
-    print("\n" + executive_report + "\n")
+    print("\n" + state.final_report + "\n")
 
-    # 4. Persist results to SQLite database
+    # 4. Persist execution state to SQLite
     save_task_run(
-        task_description=initial_state["task_description"],
-        status="COMPLETED",
-        total_tasks=analysis_results["total_tasks_completed"],
-        avg_success_rate=analysis_results["average_success_rate"],
-        top_agent=analysis_results["top_performing_agent"]
+        task_description=state.task_description,
+        status=state.status,
+        total_tasks=state.metrics.get("total_tasks_completed", 0),
+        avg_success_rate=state.metrics.get("average_success_rate", 0.0),
+        top_agent=state.metrics.get("top_performing_agent", "N/A")
     )
 
-    print("\n=== WORKFLOW FINISHED & SAVED SUCCESSFULLY ===")
+    logger.info("=== WORKFLOW FINISHED & SAVED SUCCESSFULLY ===")
 
 
 if __name__ == "__main__":

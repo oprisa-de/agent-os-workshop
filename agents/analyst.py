@@ -1,47 +1,44 @@
 import pandas as pd
 import numpy as np
+from agents.state import AgentState
+from utils.logger import get_logger
+
+logger = get_logger("WizardAnalyst")
 
 
 class WizardAnalyst:
-    def __init__(self, name: str):
+    """Data processing agent utilizing Pandas and NumPy for KPI extraction."""
+
+    def __init__(self, name: str = "Wizard-OS-Analyst"):
         self.name = name
 
-    def process_and_analyze(self, data_source: str = "default_metrics") -> dict:
-        print(f"[{self.name}] Processing data from source: '{data_source}'...")
+    def process_and_analyze(self, state: AgentState, data_source: str = "agent_performance_logs") -> AgentState:
+        """Processes operational logs and populates analytical KPIs into AgentState."""
+        logger.info(f"[{self.name}] Processing data from source: '{data_source}'...")
 
-        # Simulating performance data for our AI agents or business workflows
-        np.random.seed(42)
-        mock_data = {
-            "agent_id": [f"Agent_{i}" for i in range(1, 6)],
-            "tasks_completed": np.random.randint(40, 120, size=5),
-            "success_rate": np.random.uniform(0.85, 0.99, size=5).round(2),
-            "avg_latency_sec": np.random.uniform(1.2, 4.5, size=5).round(2)
+        # Simulated structured agent telemetry dataset
+        data = {
+            "agent_id": ["Agent_1", "Agent_2", "Agent_3", "Agent_4", "Agent_5"],
+            "tasks_completed": [78, 84, 69, 102, 83],
+            "success_rate": [88.5, 91.2, 84.0, 96.8, 90.5]
         }
+        df = pd.DataFrame(data)
 
-        df = pd.DataFrame(mock_data)
-
-        # Performing basic analytical aggregations
         total_tasks = int(df["tasks_completed"].sum())
-        mean_success_rate = float(df["success_rate"].mean())
-        best_agent = df.loc[df["success_rate"].idxmax()]["agent_id"]
+        avg_success_rate = round(float(np.mean(df["success_rate"])), 2)
+        top_agent = str(df.loc[df["tasks_completed"].idxmax(), "agent_id"])
 
-        analysis_report = {
+        state.metrics = {
+            "data_source": data_source,
             "total_tasks_completed": total_tasks,
-            "average_success_rate": mean_success_rate,
-            "top_performing_agent": best_agent,
-            "raw_summary": df.to_dict(orient="records")
+            "average_success_rate": avg_success_rate,
+            "top_performing_agent": top_agent
         }
+        state.status = "ANALYSIS_COMPLETED"
+        state.log_step(f"Analyst processed {total_tasks} tasks (Top agent: {top_agent}).")
 
-        print(f"[{self.name}] Analysis complete. Top performer: {best_agent}")
-        return analysis_report
-
-
-if __name__ == "__main__":
-    # Test the analyst agent independently
-    analyst_bot = WizardAnalyst(name="Wizard-OS-Analyst")
-    report = analyst_bot.process_and_analyze()
-
-    print("\n--- ANALYTICAL REPORT SUMMARY ---")
-    print(f"Total Tasks: {report['total_tasks_completed']}")
-    print(f"Average Success Rate: {report['average_success_rate'] * 100:.1f}%")
-    print(f"Top Agent: {report['top_performing_agent']}")
+        logger.info(
+            f"[{self.name}] Analysis complete. Tasks: {total_tasks} | "
+            f"Avg Success: {avg_success_rate}% | Top: {top_agent}"
+        )
+        return state

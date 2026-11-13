@@ -1,8 +1,10 @@
 import sqlite3
 from datetime import datetime
 from typing import List, Tuple
+from utils.logger import get_logger
 
 DB_PATH = "database/wizard_os.db"
+logger = get_logger("WizardDatabase")
 
 
 def init_db() -> None:
@@ -10,7 +12,7 @@ def init_db() -> None:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS workflow_runs(
+        CREATE TABLE IF NOT EXISTS workflow_runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT NOT NULL,
             task_description TEXT NOT NULL,
@@ -22,7 +24,7 @@ def init_db() -> None:
     """)
     conn.commit()
     conn.close()
-    print("[Database] SQLite initialized and tables verified successfully.")
+    logger.info("SQLite initialized and tables verified successfully.")
 
 
 def save_task_run(
@@ -42,7 +44,7 @@ def save_task_run(
     """, (timestamp, task_description, status, total_tasks, avg_success_rate, top_agent))
     conn.commit()
     conn.close()
-    print("[Database] Workflow metrics successfully persisted to SQLite.")
+    logger.info("Workflow metrics successfully persisted to SQLite.")
 
 
 def fetch_recent_runs(limit: int = 5) -> List[Tuple]:
