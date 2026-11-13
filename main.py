@@ -4,6 +4,7 @@ from agents.analyst import WizardAnalyst
 from agents.synthesizer import WizardSynthesizer
 from database.db import init_db, save_task_run
 from interfaces.cli_interface import WizardCLI
+from utils.exporter import export_report
 from utils.logger import get_logger
 
 logger = get_logger("WizardMain")
@@ -26,6 +27,7 @@ def run_agent_workflow(user_task: str) -> None:
         state = analyst.process_and_analyze(state, data_source="agent_performance_logs")
     else:
         logger.info("[Workflow] Skipping Analyst node per QUICK_SUMMARY_PIPELINE route.")
+
     # 3. Synthesizer compiles the final report from AgentState
     synthesizer = WizardSynthesizer(name="Wizard-OS-Synthesizer")
     state = synthesizer.generate_executive_report(state)
@@ -40,6 +42,11 @@ def run_agent_workflow(user_task: str) -> None:
         avg_success_rate=state.metrics.get("average_success_rate", 0.0),
         top_agent=state.metrics.get("top_performing_agent", "N/A")
     )
+
+    # 5. Export structured reports to Markdown and JSON
+    exported_files = export_report(state)
+    print(f"[Export] Markdown report saved to: {exported_files['markdown_path']}")
+    print(f"[Export] JSON report saved to    : {exported_files['json_path']}")
 
     logger.info("=== WORKFLOW FINISHED & SAVED SUCCESSFULLY ===")
 

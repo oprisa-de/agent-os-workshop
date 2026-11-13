@@ -4,17 +4,8 @@ __pycache__/
 *.pyc
 .idea/
 
-# Local databases and environment variables
-database/wizard_os.db
-.env
-
-# Python environment and caches
-.venv/
-__pycache__/
-*.pyc
-.idea/
-
-# Local databases, logs, and environment variables
+# Local databases, logs, exports, and environment variables
 database/wizard_os.db
 logs/
+exports/
 .env
